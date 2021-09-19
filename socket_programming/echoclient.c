@@ -101,6 +101,7 @@ ssize_t rio_writen(int fd, void *usrbuf, size_t n)
     return n;
 }
 
+
 int open_clientfd(char *hostname, char *port) {
     int clientfd;
     struct addrinfo hints, *listp, *p;
