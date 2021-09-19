@@ -100,8 +100,7 @@ int open_listenfd(char *port)
     memset(&hints, 0, sizeof(struct addrinfo));
     hints.ai_socktype = SOCK_STREAM;
     /* Accept connections */
-    hints.ai_flags = AI_PASSIVE |
-    AI_ADDRCONFIG; /* ... on any IP address */
+    hints.ai_flags = AI_PASSIVE | AI_ADDRCONFIG; /* ... on any IP address */
     hints.ai_flags |= AI_NUMERICSERV;
     /* ... using port number */
     getaddrinfo(NULL, port, &hints, &listp);
