@@ -1,22 +1,20 @@
-CC = gcc
-CFLAGS = -O2 -Wall -I .
+# tiny: tiny.o csapp.o
+# 	gcc -o tiny tiny.o csapp.o
+# tiny.o: tiny.c
+# 	gcc -c tiny.c
+# csapp.o: csapp.c
+# 	gcc -c csapp.c
 
-# This flag includes the Pthreads library on a Linux box.
-# Others systems will probably require something different.
-LIB = -lpthread
+# clean:
+# 	rm -f *.o
+# 	rm -f tiny
 
-all: tiny cgi
-
-tiny: tiny.c csapp.o
-	$(CC) $(CFLAGS) -o tiny tiny.c csapp.o $(LIB)
-
-csapp.o: csapp.c
-	$(CC) $(CFLAGS) -c csapp.c
-
-cgi:
-	(cd cgi-bin; make)
-
+TARGET = tiny
+OBJS = 	tiny.o csapp.o
+%.o: %.c
+	gcc -c $<
+$(TARGET) : $(OBJS)
+	gcc -o $(TARGET) $(OBJS)
 clean:
-	rm -f *.o tiny *~
-	(cd cgi-bin; make clean)
-
+	rm -f *.o
+	rm -f $(TARGET)
