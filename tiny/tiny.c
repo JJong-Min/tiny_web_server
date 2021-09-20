@@ -46,9 +46,9 @@ void doit(int fd)
 
   /* Read request line and headers */
   // rio(robust I/O (Rio)) 초기화
-  rio_readinitb(&rio, fd);
+  Rio_readinitb(&rio, fd);
   // buf에서 client request 읽어들이기
-  rio_readlineb(&rio, buf, MAXLINE);
+  Rio_readlineb(&rio, buf, MAXLINE);
   printf("Request headers:\n");
   // request header 출력
   printf("%s", buf);
@@ -88,7 +88,7 @@ void doit(int fd)
       return;
   }
   // response static files
-  serve_dynamic(fd, filename, cgiargs);
+    serve_dynamic(fd, filename, cgiargs);
   }
 }
 
@@ -105,22 +105,22 @@ void clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longms
 
   //response 쓰기
   sprintf(buf, "HTTP/1.0 %s %s\r\n", errnum, shortmsg);        // 버전, 에러번호, 상태메시지
-  rio_writen(fd, buf, strlen(buf));
+  Rio_writen(fd, buf, strlen(buf));
   sprintf(buf, "Content-type: text/html\r\n");
-  rio_writen(fd, buf, strlen(buf));
+  Rio_writen(fd, buf, strlen(buf));
   sprintf(buf, "Content-length: %d\r\n\r\n", (int)strlen(body));
-  rio_writen(fd, buf, strlen(buf));
-  rio_writen(fd, body, strlen(body));                          // body 입력
+  Rio_writen(fd, buf, strlen(buf));
+  Rio_writen(fd, body, strlen(body));                          // body 입력
 }
 
 // request header를 읽기 위한 함수
 void read_requesthdrs(rio_t *rp)
 {
   char buf[MAXLINE];
-  rio_readlineb(rp, buf, MAXLINE);
+  Rio_readlineb(rp, buf, MAXLINE);
   // 빈 텍스트 줄이 아닐 때까지 읽기
   while(strcmp(buf, "\r\n")) {
-    rio_readlineb(rp, buf, MAXLINE);
+    Rio_readlineb(rp, buf, MAXLINE);
     printf("%s", buf);
   }
   return;
@@ -176,14 +176,14 @@ void serve_static(int fd, char *filename, int filesize)
   sprintf(buf, "%sConnection: close\r\n", buf);
   sprintf(buf, "%sContent-length: %d\r\n", buf, filesize);
   sprintf(buf, "%sContent-type: %s\r\n\r\n", buf, filetype);
-  rio_writen(fd, buf, strlen(buf));
+  Rio_writen(fd, buf, strlen(buf));
   printf("Response headers:\n");
   printf("%s", buf);
 
   /* Send response body to client */
   srcfd = Open(filename, O_RDONLY, 0);
   srcp = Mmap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0);
-  close(srcfd);
+  Close(srcfd);
   rio_writen(fd, srcp, filesize);
   Munmap(srcp, filesize);
 }
@@ -209,9 +209,9 @@ void serve_dynamic(int fd, char *filename, char *cgiargs)
 
   /* Return first part of HTTP response */
   sprintf(buf, "HTTP/1.0 200 OK\r\n");
-  rio_writen(fd, buf, strlen(buf));
+  Rio_writen(fd, buf, strlen(buf));
   sprintf(buf, "Server: Tiny Web Server\r\n");
-  rio_writen(fd, buf, strlen(buf));
+  Rio_writen(fd, buf, strlen(buf));
 
   if (Fork() == 0) { /* Child */
   /* Real server would set all CGI vars here */
@@ -219,7 +219,7 @@ void serve_dynamic(int fd, char *filename, char *cgiargs)
   Dup2(fd, STDOUT_FILENO); /* Redirect stdout to client */
   Execve(filename, emptylist, environ); /* Run CGI program */
   }
-  wait(NULL); /* Parent waits for and reaps child */
+  Wait(NULL); /* Parent waits for and reaps child */
 }
 
 
