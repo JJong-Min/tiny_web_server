@@ -57,6 +57,7 @@ void doit(int fd)
   // buf에 있는 데이터를 method, uri, version에 담기
   sscanf(buf, "%s %s %s", method, uri, version);
   // method가 GET이 아니라면 error message 출력
+  // problem 11.11을 위해 HEAD 추가
   if (strcasecmp(method, "GET")) {
     clienterror(fd, method, "501", "Not implemented", "Tiny does not implement this method");
     return;
@@ -74,8 +75,7 @@ void doit(int fd)
   if (is_static) {
     // file이 정규파일이 아니거나 사용자 읽기가 안되면 error message 출력
     if (!(S_ISREG(sbuf.st_mode)) || !(S_IRUSR & sbuf.st_mode)) {
-      clienterror(fd, filename, "403", "Forbidden",
-      "Tiny couldn't read the file");
+      clienterror(fd, filename, "403", "Forbidden", "Tiny couldn't read the file");
       return;
     }
     // response static file
@@ -231,7 +231,7 @@ void serve_static(int fd, char *filename, int filesize)
     strcpy(filetype, "image/png");
   else if (strstr(filename, ".jpg"))
     strcpy(filetype, "image/jpeg");
-  else if (strstr(filename, ".MPG"))
+  else if (strstr(filename, ".mpg"))
     strcpy(filetype, "video/mpg");
   else
     strcpy(filetype, "text/plain");
