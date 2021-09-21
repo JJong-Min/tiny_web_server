@@ -8,7 +8,7 @@
  */
 #include "csapp.h"
 #include <stdlib.h>
-#define originalx
+#define original_staticx
 
 void doit(int fd);
 void read_requesthdrs(rio_t *rp);
@@ -166,7 +166,7 @@ int parse_uri(char *uri, char *filename, char *cgiargs)
   }
 }
 
-#ifdef original
+#ifdef original_static
 void serve_static(int fd, char *filename, int filesize)
 {
   int srcfd;
