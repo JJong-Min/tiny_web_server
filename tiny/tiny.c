@@ -13,9 +13,9 @@
 void doit(int fd);
 void read_requesthdrs(rio_t *rp);
 int parse_uri(char *uri, char *filename, char *cgiargs);
-void serve_static(int fd, char *filename, int filesize);
+void serve_static(int fd, char *filename, int filesize, char *method);
 void get_filetype(char *filename, char *filetype);
-void serve_dynamic(int fd, char *filename, char *cgiargs);
+void serve_dynamic(int fd, char *filename, char *cgiargs, char *method);
 void clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longmsg);
 
 /* doit에서 쓰이는 stat struct */
@@ -58,7 +58,7 @@ void doit(int fd)
   sscanf(buf, "%s %s %s", method, uri, version);
   // method가 GET이 아니라면 error message 출력
   // problem 11.11을 위해 HEAD 추가
-  if (strcasecmp(method, "GET")) {
+  if (strcasecmp(method, "GET") != 0 || strcasecmp(method, "HEAD") != 0) {
     clienterror(fd, method, "501", "Not implemented", "Tiny does not implement this method");
     return;
   }
@@ -79,7 +79,7 @@ void doit(int fd)
       return;
     }
     // response static file
-    serve_static(fd, filename, sbuf.st_size);
+    serve_static(fd, filename, sbuf.st_size, method);
   }
   // request file이 dynamic contents이면 실행
   else {
@@ -89,8 +89,8 @@ void doit(int fd)
       "Tiny couldn't run the CGI program");
       return;
   }
-  // response static files
-    serve_dynamic(fd, filename, cgiargs);
+  // response dynamic files
+    serve_dynamic(fd, filename, cgiargs, method);
   }
 }
 
@@ -192,7 +192,8 @@ void serve_static(int fd, char *filename, int filesize)
 }
 
 #else
-void serve_static(int fd, char *filename, int filesize)
+// HEAD method 처리를 위한 인자 추가
+void serve_static(int fd, char *filename, int filesize, char *method)
 {
   int srcfd;
   char *srcp, filetype[MAXLINE], buf[MAXBUF];
@@ -208,16 +209,18 @@ void serve_static(int fd, char *filename, int filesize)
   printf("Response headers:\n");
   printf("%s", buf);
 
-  /* Send response body to client */
-  srcfd = Open(filename, O_RDONLY, 0);
-  // srcp = Mmap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0);
-  // solved problem 11.9
-  srcp = malloc(filesize);
-  Rio_readn(srcfd, srcp, filesize);
-  Close(srcfd);
-  Rio_writen(fd, srcp, filesize);
-  // Munmap(srcp, filesize);
-  free(srcp);
+  if(strcasecmp(method, "GET") == 0) {
+    /* Send response body to client */
+    srcfd = Open(filename, O_RDONLY, 0);
+    // srcp = Mmap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0);
+    // solved problem 11.9
+    srcp = malloc(filesize);
+    Rio_readn(srcfd, srcp, filesize);
+    Close(srcfd);
+    Rio_writen(fd, srcp, filesize);
+    // Munmap(srcp, filesize);
+    free(srcp);
+  }
 }
 #endif
   /* * get_filetype - Derive file type from filename*/
@@ -237,7 +240,7 @@ void serve_static(int fd, char *filename, int filesize)
     strcpy(filetype, "text/plain");
 }
 
-void serve_dynamic(int fd, char *filename, char *cgiargs)
+void serve_dynamic(int fd, char *filename, char *cgiargs, char *method)
 {
   char buf[MAXLINE], *emptylist[] = { NULL };
 
@@ -250,6 +253,8 @@ void serve_dynamic(int fd, char *filename, char *cgiargs)
   if (Fork() == 0) { /* Child */
   /* Real server would set all CGI vars here */
   setenv("QUERY_STRING", cgiargs, 1);
+  // method를 cgi-bin/adder.c에 넘겨주기 위해 환경변수 set
+  setenv("REQUEST_METHOD", method, 1);
   Dup2(fd, STDOUT_FILENO); /* Redirect stdout to client */
   Execve(filename, emptylist, environ); /* Run CGI program */
   }
@@ -281,7 +286,6 @@ int main(int argc, char **argv)             //argc: arguments count, argv: argum
     // client socket에서 hostname과 port number를 스트링으로 변환
     getnameinfo((SA *)&clientaddr, clientlen, hostname, MAXLINE, port, MAXLINE, 0);
     printf("Accepted connection from (%s, %s)\n", hostname, port);
-    // 
     doit(connfd);
     close(connfd);
   }
