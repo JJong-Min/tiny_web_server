@@ -6,7 +6,7 @@
 
 int main(void) 
 {
-  char *buf, *p, *arg1_p, *arg2_p;
+  char *buf, *p, *arg1_p, *arg2_p, *method;
   char arg1[MAXLINE], arg2[MAXLINE], content[MAXLINE], val1[MAXLINE], val2[MAXLINE];
   int n1=0, n2=0;
 
@@ -28,6 +28,7 @@ int main(void)
     n1 = atoi(val1);
     n2 = atoi(val2);
   }
+  method = getenv("REQUEST_METHOD");
   /* Make the response body */
   sprintf(content, "QUERY_STRING=%s", buf);
   sprintf(content, "Welcome to add.com: ");
@@ -38,7 +39,11 @@ int main(void)
   printf("Connection: close\r\n");
   printf("Content-length: %d\r\n", (int)strlen(content));
   printf("Content-type: text/html\r\n\r\n");
-  printf("%s", content);
+
+  // method가 GET일 경우에만 response body보냄
+  if (strcasecmp(method, "GET") == 0) {
+    printf("%s", content);
+  }
   fflush(stdout);
 
   exit(0);
